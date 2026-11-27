@@ -221,12 +221,15 @@
           }).then(function (r) {
             if (r.ok) return r.status === 204 ? null : r.json();
             return r.text().then(function (t) {
+              var ghMsg = "";
+              try { ghMsg = JSON.parse(t).message || ""; } catch (e) { ghMsg = t.slice(0, 200); }
               var msg = "GitHub エラー (" + r.status + ")";
               if (r.status === 401) msg = "トークンがまちがっているか、期限が切れています。";
               if (r.status === 403 || r.status === 404)
                 msg = "トークンに Japan-addon の Contents「Read and write」の権限がありません。";
-              if (r.status === 409 || r.status === 422) msg = "ほかの更新とぶつかりました。もう一度押してください。";
-              var err = new Error(msg);
+              if (r.status === 413) msg = "ファイルが大きすぎて GitHub に受け付けてもらえませんでした。";
+              var err = new Error(msg + "\n[" + (opts.step || path) + "] " + ghMsg);
+              err.status = r.status;
               err.detail = t;
               throw err;
             });
@@ -296,23 +299,37 @@
         function commit(state, files, message) {
           var blobs = files.map(function (f) {
             if (f.remove) return Promise.resolve({ path: f.path, mode: "100644", type: "blob", sha: null });
-            return gh("/git/blobs", { method: "POST", body: { content: f.base64, encoding: "base64" } }).then(
+            return gh("/git/blobs", { method: "POST", step: "ファイル送信 " + f.path, body: { content: f.base64, encoding: "base64" } }).then(
               function (b) { return { path: f.path, mode: "100644", type: "blob", sha: b.sha }; }
             );
           });
           return Promise.all(blobs)
             .then(function (tree) {
-              return gh("/git/trees", { method: "POST", body: { base_tree: state.tree, tree: tree } });
+              return gh("/git/trees", { method: "POST", step: "フォルダ作成", body: { base_tree: state.tree, tree: tree } });
             })
             .then(function (t) {
               return gh("/git/commits", {
                 method: "POST",
+                step: "コミット作成",
                 body: { message: message, tree: t.sha, parents: [state.head] }
               });
             })
             .then(function (c) {
-              return gh("/git/refs/heads/" + BRANCH, { method: "PATCH", body: { sha: c.sha } });
+              return gh("/git/refs/heads/" + BRANCH, { method: "PATCH", step: "公開（main を更新）", body: { sha: c.sha, force: false } });
             });
+        }
+
+        // main が途中で変わったときは、最新を読み直して2回までやり直す
+        function withRetry(work, tries) {
+          tries = tries === undefined ? 2 : tries;
+          return loadState().then(work).catch(function (e) {
+            if (tries > 0 && (e.status === 409 || e.status === 422) && /main/.test(e.message)) {
+              return new Promise(function (r) { setTimeout(r, 1500); }).then(function () {
+                return withRetry(work, tries - 1);
+              });
+            }
+            throw e;
+          });
         }
 
         function jsonFile(list) {
@@ -362,8 +379,7 @@
         function removeAddon(index, a) {
           if (!confirm("「" + (a.name || "") + "」を削除しますか？\nサイトから消え、ダウンロードできなくなります。")) return;
           show("list-msg", "info", "削除しています…");
-          loadState()
-            .then(function (s) {
+          withRetry(function (s) {
               var list = s.list.filter(function (x) {
                 return !(x.name === a.name && x.file === a.file);
               });
@@ -434,13 +450,14 @@
           if (image) entry.image = safeName(image, "images/");
           Object.keys(entry).forEach(function (k) { if (!entry[k]) delete entry[k]; });
 
-          Promise.all([fileToBase64(file), image ? fileToBase64(image) : null, loadState()])
+          Promise.all([fileToBase64(file), image ? fileToBase64(image) : null])
             .then(function (r) {
-              var s = r[2];
-              var list = s.list.concat([entry]);
-              var files = [{ path: entry.file, base64: r[0] }, jsonFile(list)];
-              if (image) files.push({ path: entry.image, base64: r[1] });
-              return commit(s, files, "アドオンを追加: " + name).then(function () { return list; });
+              return withRetry(function (s) {
+                var list = s.list.concat([entry]);
+                var files = [{ path: entry.file, base64: r[0] }, jsonFile(list)];
+                if (image) files.push({ path: entry.image, base64: r[1] });
+                return commit(s, files, "アドオンを追加: " + name).then(function () { return list; });
+              });
             })
             .then(function (list) {
               renderList(list);
