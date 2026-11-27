@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>管理ページ | ろぼくんアドオン配布部屋</title>
+    <style>
+      :root {
+        --bg: #f7f1e8;
+        --panel: #fffdf9;
+        --ink: #251b14;
+        --muted: #665a50;
+        --primary: #8a4b32;
+        --line: #eadfc9;
+        --ok: #3d7a3a;
+        --ng: #b03a2e;
+        --shadow: 0 12px 28px rgba(52, 37, 25, 0.08);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        line-height: 1.7;
+      }
+      .wrap { width: min(720px, calc(100% - 32px)); margin: 0 auto; padding: 32px 0 64px; }
+      h1 { font-size: 1.6rem; margin: 0 0 4px; }
+      h2 { font-size: 1.2rem; margin: 0 0 12px; }
+      a { color: var(--primary); }
+      .sub { color: var(--muted); margin: 0 0 24px; }
+      .box {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: var(--shadow);
+      }
+      label { display: block; font-weight: 700; margin: 14px 0 6px; }
+      label small { font-weight: 400; color: var(--muted); }
+      input[type="text"], input[type="password"], textarea {
+        width: 100%;
+        padding: 12px;
+        font: inherit;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+        color: var(--ink);
+      }
+      input[type="file"] { width: 100%; font: inherit; }
+      textarea { min-height: 90px; resize: vertical; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .btn {
+        display: inline-block;
+        margin-top: 18px;
+        padding: 14px 22px;
+        border: 0;
+        border-radius: 999px;
+        background: var(--primary);
+        color: #fff;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        width: 100%;
+      }
+      .btn:disabled { opacity: 0.5; cursor: wait; }
+      .btn.small {
+        width: auto;
+        margin: 0;
+        padding: 8px 14px;
+        font-size: 0.9rem;
+        background: #fff;
+        color: var(--ng);
+        border: 1px solid var(--ng);
+      }
+      .btn.plain {
+        width: auto;
+        background: #fff;
+        color: var(--ink);
+        border: 1px solid var(--line);
+        margin-top: 10px;
+        padding: 8px 14px;
+        font-size: 0.9rem;
+      }
+      .msg { margin-top: 14px; padding: 12px; border-radius: 10px; display: none; white-space: pre-wrap; }
+      .msg.show { display: block; }
+      .msg.ok { background: #e7f2e6; color: var(--ok); }
+      .msg.ng { background: #f8e5e2; color: var(--ng); }
+      .msg.info { background: #f2e7d8; color: var(--muted); }
+      .list { list-style: none; margin: 0; padding: 0; }
+      .list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .list li:last-child { border-bottom: 0; }
+      .list .name { font-weight: 700; word-break: break-all; }
+      .list .file { font-size: 0.85rem; color: var(--muted); word-break: break-all; }
+      .muted { color: var(--muted); }
+      ol { padding-left: 1.2rem; margin: 8px 0; }
+      @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>管理ページ</h1>
+      <p class="sub">ここからアドオンを公開・削除できます。（<a href="./">サイトに戻る</a>）</p>
+
+      <div class="box" id="token-box">
+        <h2>① 合言葉（トークン）</h2>
+        <p class="muted">
+          GitHub で作った「トークン」を入れてください。このスマホ・パソコンだけに保存され、ほかの人には見えません。
+          <strong>トークンはだれにも教えないでください。</strong>
+        </p>
+        <label for="token">トークン</label>
+        <input type="password" id="token" autocomplete="off" placeholder="github_pat_..." />
+        <button class="btn" id="save-token" type="button">保存してつなぐ</button>
+        <button class="btn plain" id="clear-token" type="button">このデバイスからトークンを消す</button>
+        <div class="msg" id="token-msg"></div>
+      </div>
+
+      <form class="box" id="upload-form">
+        <h2>② アドオンを公開する</h2>
+        <label for="f-name">名前 <small>（必須）</small></label>
+        <input type="text" id="f-name" required placeholder="例：日本セット" />
+
+        <label for="f-desc">説明</label>
+        <textarea id="f-desc" placeholder="例：日本の建物やブロックを追加します。"></textarea>
+
+        <div class="row">
+          <div>
+            <label for="f-tag">ラベル</label>
+            <input type="text" id="f-tag" placeholder="例：建築" />
+          </div>
+          <div>
+            <label for="f-version">アドオンのバージョン</label>
+            <input type="text" id="f-version" placeholder="例：1.0.0" />
+          </div>
+        </div>
+
+        <label for="f-mc">対応する Minecraft のバージョン</label>
+        <input type="text" id="f-mc" placeholder="例：1.21" />
+
+        <label for="f-file">アドオンのファイル <small>（必須・.mcaddon / .mcpack / .mcworld / .zip、100MB まで）</small></label>
+        <input type="file" id="f-file" required accept=".mcaddon,.mcpack,.mcworld,.mctemplate,.zip" />
+
+        <label for="f-image">スクリーンショット <small>（なくてもOK）</small></label>
+        <input type="file" id="f-image" accept="image/png,image/jpeg,image/webp,image/gif" />
+
+        <button class="btn" id="upload-btn" type="submit">公開する</button>
+        <div class="msg" id="upload-msg"></div>
+      </form>
+
+      <div class="box">
+        <h2>③ 公開中のアドオン</h2>
+        <ul class="list" id="list"><li class="muted">トークンを保存すると表示されます</li></ul>
+        <div class="msg" id="list-msg"></div>
+      </div>
+
+      <div class="box">
+        <h2>トークンの作り方（最初の1回だけ）</h2>
+        <ol>
+          <li><a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">トークン作成ページ</a>を開く</li>
+          <li>「Token name」に <code>addon-site</code> など好きな名前を入れる</li>
+          <li>「Expiration」で期限を選ぶ（1年など）</li>
+          <li>「Repository access」で <strong>Only select repositories</strong> を選び、<code>Japan-addon</code> を選ぶ</li>
+          <li>「Permissions」の「Repository permissions」→ <strong>Contents</strong> を <strong>Read and write</strong> にする</li>
+          <li>いちばん下の「Generate token」を押し、出てきた <code>github_pat_</code> で始まる文字をコピーして、上の①に貼る</li>
+        </ol>
+        <p class="muted">トークンが他の人に知られたら、GitHub の同じページで「Delete」して作り直してください。</p>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var OWNER = "robokun60-del";
+        var REPO = "Japan-addon";
+        var BRANCH = "main";
+        var API = "https://api.github.com/repos/" + OWNER + "/" + REPO;
+        var KEY = "robokun-addon-token";
+        var MAX = 100 * 1024 * 1024;
+
+        var $ = function (id) { return document.getElementById(id); };
+
+        function store(get, val) {
+          try {
+            if (get) return localStorage.getItem(KEY) || "";
+            if (val) localStorage.setItem(KEY, val);
+            else localStorage.removeItem(KEY);
+          } catch (e) {}
+          return "";
+        }
+
+        var token = store(true);
+        if (token) $("token").value = token;
+
+        function show(id, type, text) {
+          var m = $(id);
+          m.className = "msg show " + type;
+          m.textContent = text;
+        }
+
+        function gh(path, opts) {
+          opts = opts || {};
+          var headers = {
+            Accept: "application/vnd.github+json",
+            Authorization: "Bearer " + token,
+            "X-GitHub-Api-Version": "2022-11-28"
+          };
+          if (opts.body) headers["Content-Type"] = "application/json";
+          return fetch(API + path, {
+            method: opts.method || "GET",
+            headers: headers,
+            body: opts.body ? JSON.stringify(opts.body) : undefined,
+            cache: "no-store"
+          }).then(function (r) {
+            if (r.ok) return r.status === 204 ? null : r.json();
+            return r.text().then(function (t) {
+              var msg = "GitHub エラー (" + r.status + ")";
+              if (r.status === 401) msg = "トークンがまちがっているか、期限が切れています。";
+              if (r.status === 403 || r.status === 404)
+                msg = "トークンに Japan-addon の Contents「Read and write」の権限がありません。";
+              if (r.status === 409 || r.status === 422) msg = "ほかの更新とぶつかりました。もう一度押してください。";
+              var err = new Error(msg);
+              err.detail = t;
+              throw err;
+            });
+          });
+        }
+
+        function fileToBase64(file) {
+          return new Promise(function (resolve, reject) {
+            var fr = new FileReader();
+            fr.onload = function () {
+              var s = String(fr.result);
+              resolve(s.slice(s.indexOf(",") + 1));
+            };
+            fr.onerror = function () { reject(new Error("ファイルを読み込めませんでした。")); };
+            fr.readAsDataURL(file);
+          });
+        }
+
+        function utf8ToBase64(str) {
+          var bytes = new TextEncoder().encode(str);
+          var bin = "";
+          for (var i = 0; i < bytes.length; i += 0x8000) {
+            bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+          }
+          return btoa(bin);
+        }
+
+        function base64ToUtf8(b64) {
+          var bin = atob(b64.replace(/\s/g, ""));
+          var bytes = new Uint8Array(bin.length);
+          for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          return new TextDecoder().decode(bytes);
+        }
+
+        function safeName(file, prefix) {
+          var dot = file.name.lastIndexOf(".");
+          var ext = dot >= 0 ? file.name.slice(dot).toLowerCase().replace(/[^a-z0-9.]/g, "") : "";
+          var base = (dot >= 0 ? file.name.slice(0, dot) : file.name)
+            .replace(/[^A-Za-z0-9_-]+/g, "-")
+            .replace(/^-+|-+$/g, "")
+            .slice(0, 40);
+          var stamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
+          return prefix + (base ? base + "-" : "addon-") + stamp + ext;
+        }
+
+        // 最新の main と addons.json を読む
+        function loadState() {
+          return gh("/git/ref/heads/" + BRANCH).then(function (ref) {
+            var head = ref.object.sha;
+            return gh("/git/commits/" + head).then(function (c) {
+              return gh("/contents/addons.json?ref=" + head)
+                .then(function (f) {
+                  var list = JSON.parse(base64ToUtf8(f.content));
+                  return Array.isArray(list) ? list : [];
+                }, function (e) {
+                  if (String(e.message).indexOf("権限") >= 0) return [];
+                  throw e;
+                })
+                .then(function (list) {
+                  return { head: head, tree: c.tree.sha, list: list };
+                });
+            });
+          });
+        }
+
+        // ファイルをまとめて1回で更新する
+        function commit(state, files, message) {
+          var blobs = files.map(function (f) {
+            if (f.remove) return Promise.resolve({ path: f.path, mode: "100644", type: "blob", sha: null });
+            return gh("/git/blobs", { method: "POST", body: { content: f.base64, encoding: "base64" } }).then(
+              function (b) { return { path: f.path, mode: "100644", type: "blob", sha: b.sha }; }
+            );
+          });
+          return Promise.all(blobs)
+            .then(function (tree) {
+              return gh("/git/trees", { method: "POST", body: { base_tree: state.tree, tree: tree } });
+            })
+            .then(function (t) {
+              return gh("/git/commits", {
+                method: "POST",
+                body: { message: message, tree: t.sha, parents: [state.head] }
+              });
+            })
+            .then(function (c) {
+              return gh("/git/refs/heads/" + BRANCH, { method: "PATCH", body: { sha: c.sha } });
+            });
+        }
+
+        function jsonFile(list) {
+          return { path: "addons.json", base64: utf8ToBase64(JSON.stringify(list, null, 2) + "\n") };
+        }
+
+        function renderList(list) {
+          var ul = $("list");
+          ul.textContent = "";
+          if (!list.length) {
+            var li = document.createElement("li");
+            li.className = "muted";
+            li.textContent = "まだありません";
+            ul.appendChild(li);
+            return;
+          }
+          list.forEach(function (a, i) {
+            var li = document.createElement("li");
+            var info = document.createElement("div");
+            var n = document.createElement("div");
+            n.className = "name";
+            n.textContent = a.name || "(名前なし)";
+            var f = document.createElement("div");
+            f.className = "file";
+            f.textContent = a.file || "";
+            info.appendChild(n);
+            info.appendChild(f);
+            var del = document.createElement("button");
+            del.type = "button";
+            del.className = "btn small";
+            del.textContent = "削除";
+            del.onclick = function () { removeAddon(i, a); };
+            li.appendChild(info);
+            li.appendChild(del);
+            ul.appendChild(li);
+          });
+        }
+
+        function refresh() {
+          if (!token) return Promise.resolve();
+          return loadState().then(function (s) {
+            renderList(s.list);
+            return s;
+          });
+        }
+
+        function removeAddon(index, a) {
+          if (!confirm("「" + (a.name || "") + "」を削除しますか？\nサイトから消え、ダウンロードできなくなります。")) return;
+          show("list-msg", "info", "削除しています…");
+          loadState()
+            .then(function (s) {
+              var list = s.list.filter(function (x) {
+                return !(x.name === a.name && x.file === a.file);
+              });
+              var files = [jsonFile(list)];
+              [a.file, a.image].forEach(function (p) {
+                if (p && /^(addons|images)\//.test(p)) files.push({ path: p, remove: true });
+              });
+              return commit(s, files, "アドオンを削除: " + (a.name || "")).then(function () { return list; });
+            })
+            .then(function (list) {
+              renderList(list);
+              show("list-msg", "ok", "削除しました。サイトに反映されるまで1〜2分かかります。");
+            })
+            .catch(function (e) {
+              show("list-msg", "ng", e.message);
+            });
+        }
+
+        $("save-token").onclick = function () {
+          var v = $("token").value.trim();
+          if (!v) return show("token-msg", "ng", "トークンを入れてください。");
+          token = v;
+          show("token-msg", "info", "確認しています…");
+          gh("")
+            .then(function (repo) {
+              if (!repo.permissions || !repo.permissions.push) {
+                throw new Error("このトークンでは書き込みができません。Contents を「Read and write」にしてください。");
+              }
+              store(false, token);
+              show("token-msg", "ok", "つながりました！");
+              return refresh();
+            })
+            .catch(function (e) {
+              show("token-msg", "ng", e.message);
+            });
+        };
+
+        $("clear-token").onclick = function () {
+          store(false, "");
+          token = "";
+          $("token").value = "";
+          show("token-msg", "info", "このデバイスからトークンを消しました。");
+        };
+
+        $("upload-form").onsubmit = function (ev) {
+          ev.preventDefault();
+          if (!token) return show("upload-msg", "ng", "先に①でトークンを保存してください。");
+          var file = $("f-file").files[0];
+          var image = $("f-image").files[0];
+          var name = $("f-name").value.trim();
+          if (!name || !file) return show("upload-msg", "ng", "名前とファイルは必須です。");
+          if (file.size > MAX) return show("upload-msg", "ng", "ファイルが100MBより大きいので公開できません。");
+          if (image && image.size > 20 * 1024 * 1024) return show("upload-msg", "ng", "スクリーンショットは20MBまでにしてください。");
+
+          var btn = $("upload-btn");
+          btn.disabled = true;
+          show("upload-msg", "info", "アップロードしています…（大きいファイルは数分かかります。画面を閉じないでください）");
+
+          var entry = {
+            name: name,
+            description: $("f-desc").value.trim(),
+            tag: $("f-tag").value.trim(),
+            version: $("f-version").value.trim(),
+            minecraft: $("f-mc").value.trim(),
+            updated: new Date().toISOString().slice(0, 10),
+            file: safeName(file, "addons/")
+          };
+          if (image) entry.image = safeName(image, "images/");
+          Object.keys(entry).forEach(function (k) { if (!entry[k]) delete entry[k]; });
+
+          Promise.all([fileToBase64(file), image ? fileToBase64(image) : null, loadState()])
+            .then(function (r) {
+              var s = r[2];
+              var list = s.list.concat([entry]);
+              var files = [{ path: entry.file, base64: r[0] }, jsonFile(list)];
+              if (image) files.push({ path: entry.image, base64: r[1] });
+              return commit(s, files, "アドオンを追加: " + name).then(function () { return list; });
+            })
+            .then(function (list) {
+              renderList(list);
+              $("upload-form").reset();
+              show("upload-msg", "ok", "公開しました！サイトに出るまで1〜2分かかります。");
+            })
+            .catch(function (e) {
+              show("upload-msg", "ng", e.message);
+            })
+            .then(function () {
+              btn.disabled = false;
+            });
+        };
+
+        if (token) {
+          refresh().catch(function (e) { show("token-msg", "ng", e.message); });
+        }
+      })();
+    </script>
+  </body>
+</html>
