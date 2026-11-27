@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>和風アドオン配布サイト</title>
+    <title>ろぼくんアドオン配布部屋</title>
     <meta
       name="description"
-      content="統合版向けの和風マイクラアドオンを配布するサイトです。"
+      content="ろぼくんが作ったマイクラ統合版アドオンを配布する「ろぼくんアドオン配布部屋」です。"
     />
     <style>
       :root {
@@ -439,6 +439,58 @@
         line-height: 1.8;
       }
 
+      .card-art img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        position: relative;
+        z-index: 1;
+      }
+
+      .card-info {
+        margin: 0 0 4px;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .empty {
+        grid-column: 1 / -1;
+        padding: 40px 24px;
+        text-align: center;
+        color: var(--muted);
+        background: var(--panel);
+        border: 1px dashed var(--line);
+        border-radius: 24px;
+      }
+
+      .steps h3,
+      .feature-box h3 {
+        margin-top: 0;
+      }
+
+      .rule-list {
+        margin: 0;
+        padding-left: 0;
+        list-style: none;
+        line-height: 1.9;
+        color: var(--muted);
+      }
+
+      .rule-list li::before {
+        margin-right: 8px;
+        font-weight: 800;
+      }
+
+      .rule-list.ok li::before {
+        content: "○";
+        color: #3d7a3a;
+      }
+
+      .rule-list.ng li::before {
+        content: "×";
+        color: #b03a2e;
+      }
+
       footer {
         margin-top: 56px;
         border-top: 1px solid var(--line);
@@ -494,13 +546,14 @@
       <div class="container nav">
         <div class="brand">
           <div class="brand-mark" aria-hidden="true"></div>
-          <span>和風アドオン</span>
+          <span>ろぼくんアドオン配布部屋</span>
         </div>
 
         <nav class="nav-links">
           <a href="#top">ホーム</a>
           <a href="#addons">アドオン</a>
           <a href="#install">導入方法</a>
+          <a href="#rules">利用ルール</a>
           <a href="#faq">FAQ</a>
         </nav>
 
@@ -527,16 +580,16 @@
 
             <div class="mini-stats">
               <div class="stat">
-                <strong>12+</strong>
+                <strong id="addon-count">-</strong>
                 <span>配布中</span>
               </div>
               <div class="stat">
-                <strong>4.0</strong>
-                <span>平均評価</span>
+                <strong>0円</strong>
+                <span>ぜんぶ無料</span>
               </div>
               <div class="stat">
-                <strong>1.21x</strong>
-                <span>対応版</span>
+                <strong>統合版</strong>
+                <span>対応</span>
               </div>
             </div>
           </div>
@@ -548,58 +601,12 @@
       <section id="addons" class="section">
         <div class="container">
           <div class="section-head">
-            <h2>おすすめアドオン</h2>
-            <p>統合版対応の和風パックを厳選して配信中</p>
+            <h2>アドオン一覧</h2>
+            <p>ぜんぶ無料。だれでもダウンロードして使えます</p>
           </div>
 
-          <div class="addon-grid">
-            <article class="card">
-              <div class="card-art"></div>
-              <div class="card-body">
-                <span class="tag">村 / 建築</span>
-                <h3>和風村セット</h3>
-                <p>
-                  茶屋、神社、古民家、橋、石畳などをまとめて追加。
-                  日本の里の風景をそのまま作りたい方におすすめです。
-                </p>
-                <div class="meta">
-                  <span class="price">無料</span>
-                  <a href="#" class="download">ダウンロード</a>
-                </div>
-              </div>
-            </article>
-
-            <article class="card">
-              <div class="card-art" style="background:linear-gradient(135deg,#ece4d2,#dec086 42%, #c6a978 100%);"></div>
-              <div class="card-body">
-                <span class="tag">自然 / 素材</span>
-                <h3>明月の山道</h3>
-                <p>
-                  竹林、木漏れ日、和風の石材、自然素材を追加。
-                  風景重視のワールドづくりにぴったりです。
-                </p>
-                <div class="meta">
-                  <span class="price">無料</span>
-                  <a href="#" class="download">ダウンロード</a>
-                </div>
-              </div>
-            </article>
-
-            <article class="card">
-              <div class="card-art" style="background:linear-gradient(135deg,#f4e8d2,#d7b468 42%, #8b6a43 100%);"></div>
-              <div class="card-body">
-                <span class="tag">家具 / 雑貨</span>
-                <h3>茶室の小物</h3>
-                <p>
-                  たき火台、障子、座布団、灯篭、和風家具などを追加。
-                  リラックス系の建築に最適です。
-                </p>
-                <div class="meta">
-                  <span class="price">無料</span>
-                  <a href="#" class="download">ダウンロード</a>
-                </div>
-              </div>
-            </article>
+          <div id="addon-grid" class="addon-grid" aria-live="polite">
+            <p class="empty">読み込み中…</p>
           </div>
         </div>
       </section>
@@ -615,8 +622,8 @@
             <div class="steps">
               <ol>
                 <li><strong>アドオンをダウンロード</strong><br />配布ページの「ダウンロード」ボタンからファイルを保存します。</li>
-                <li><strong>ファイルを展開</strong><br />ZIPファイルを解凍し、.mcpack または .mcaddon を用意します。</li>
-                <li><strong>統合版で開く</strong><br />Minecraft 統合版からファイルを選び、インポートします。</li>
+                <li><strong>ファイルを開く</strong><br />ダウンロードした .mcaddon / .mcpack をタップ（ダブルクリック）すると、Minecraft が起動して自動でインポートされます。</li>
+                <li><strong>インポート完了を確認</strong><br />画面上に「インポートが成功しました」と出ればOKです。</li>
                 <li><strong>ワールドへ適用</strong><br />ワールド設定の「アドオン」を有効化して楽しみます。</li>
               </ol>
             </div>
@@ -626,8 +633,36 @@
               <ul>
                 <li>統合版（Bedrock）に最適化</li>
                 <li>和風の雰囲気を強く出したデザイン</li>
-                <li>ダウンロード導線がわかりやすい構成</li>
+                <li>登録なし・無料でダウンロードできる</li>
                 <li>シンプルで軽い1ページレイアウト</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="rules" class="section">
+        <div class="container">
+          <div class="section-head">
+            <h2>利用ルール</h2>
+            <p>みんなが気持ちよく使えるように</p>
+          </div>
+          <div class="install-wrap">
+            <div class="steps">
+              <h3>OK なこと</h3>
+              <ul class="rule-list ok">
+                <li>自分のワールド・サーバーで使う</li>
+                <li>友だちとのマルチプレイで使う</li>
+                <li>YouTube などの動画・配信で使う（このサイトを紹介してくれるとうれしいです）</li>
+                <li>このサイトのリンクを SNS などで紹介する</li>
+              </ul>
+            </div>
+            <div class="steps">
+              <h3>NG なこと</h3>
+              <ul class="rule-list ng">
+                <li>ファイルを別のサイトに再アップロードする（配るときはこのサイトのリンクで）</li>
+                <li>自分が作ったと言って公開する</li>
+                <li>アドオンを有料で売る</li>
               </ul>
             </div>
           </div>
@@ -654,12 +689,12 @@
 
             <div class="faq-item">
               <h3>ダウンロードは無料ですか？</h3>
-              <p>基本的には無料配布です。作品や更新時期に応じて表記を変えることも可能です。</p>
+              <p>はい、すべて無料です。登録もいりません。</p>
             </div>
 
             <div class="faq-item">
               <h3>アドオンは安全ですか？</h3>
-              <p>サイトでは信頼性の高い公開形式を想定し、配布ファイルの説明と導入方法を明確にしています。</p>
+              <p>公式の配布場所はこのサイトだけです。ほかのサイトに上がっているファイルはろぼくんが配っているものではないので、このサイトからダウンロードしてください。</p>
             </div>
           </div>
         </div>
@@ -668,9 +703,83 @@
 
     <footer>
       <div class="container footer-inner">
-        <div>© 2026 和風アドオン配布サイト</div>
+        <div>© 2026 ろぼくんアドオン配布部屋</div>
         <div>統合版対応 / 和風 / 建築アドオン</div>
       </div>
     </footer>
+    <script>
+      (function () {
+        var grid = document.getElementById("addon-grid");
+        var count = document.getElementById("addon-count");
+
+        function el(tag, cls, text) {
+          var e = document.createElement(tag);
+          if (cls) e.className = cls;
+          if (text) e.textContent = text;
+          return e;
+        }
+
+        function card(a) {
+          var art = el("div", "card-art");
+          if (a.image) {
+            var img = el("img");
+            img.src = a.image;
+            img.alt = a.name + " のスクリーンショット";
+            img.loading = "lazy";
+            art.appendChild(img);
+          }
+
+          var body = el("div", "card-body");
+          if (a.tag) body.appendChild(el("span", "tag", a.tag));
+          body.appendChild(el("h3", "", a.name));
+
+          var info = [];
+          if (a.version) info.push("v" + a.version);
+          if (a.minecraft) info.push("Minecraft " + a.minecraft);
+          if (a.updated) info.push("更新 " + a.updated);
+          if (info.length) body.appendChild(el("p", "card-info", info.join(" ・ ")));
+
+          if (a.description) body.appendChild(el("p", "", a.description));
+
+          var meta = el("div", "meta");
+          meta.appendChild(el("span", "price", "無料"));
+          var link = el("a", "download", "ダウンロード");
+          link.href = a.file;
+          link.setAttribute("download", "");
+          meta.appendChild(link);
+          body.appendChild(meta);
+
+          var c = el("article", "card");
+          c.appendChild(art);
+          c.appendChild(body);
+          return c;
+        }
+
+        fetch("addons.json", { cache: "no-cache" })
+          .then(function (r) {
+            if (!r.ok) throw new Error(r.status);
+            return r.json();
+          })
+          .then(function (list) {
+            list = (list || []).filter(function (a) {
+              return a && a.name && a.file;
+            });
+            count.textContent = list.length;
+            grid.textContent = "";
+            if (!list.length) {
+              grid.appendChild(el("p", "empty", "アドオンは準備中です。もうすぐ公開するのでお楽しみに！"));
+              return;
+            }
+            list.forEach(function (a) {
+              grid.appendChild(card(a));
+            });
+          })
+          .catch(function () {
+            count.textContent = "-";
+            grid.textContent = "";
+            grid.appendChild(el("p", "empty", "アドオン一覧を読み込めませんでした。ページを再読み込みしてください。"));
+          });
+      })();
+    </script>
   </body>
 </html>
